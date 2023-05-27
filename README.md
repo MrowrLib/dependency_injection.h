@@ -114,7 +114,7 @@ void Example() {
     auto thing = container.New<IThing>();
 
     // Register a long-lived service and get a reference to the instance
-    container.RegisterSingleton<IService, IServiceImpl>();
+    container.RegisterService<IService, IServiceImpl>();
     auto& service = container.Get<IService>();
 }
 ```
