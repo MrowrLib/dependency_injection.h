@@ -8,8 +8,10 @@
 
 namespace DependencyInjection {
     class DIContainer {
+    public:
         using DeleterFunc = std::function<void(void*)>;
 
+    private:
         std::unordered_map<
             std::type_index, std::pair<
                                  std::function<std::pair<void*, DeleterFunc>(std::any)>,
@@ -79,5 +81,37 @@ namespace DependencyInjection {
             }
             throw std::logic_error("Service not registered.");
         }
+
+        static DIContainer& GetGlobalInstance() {
+            static DIContainer instance;
+            return instance;
+        }
     };
+
+    template <typename Base, typename Derived, typename... Args>
+    void Register(Args&&... args) {
+        DIContainer::GetGlobalInstance().Register<Base, Derived, Args...>();
+    }
+
+    template <typename Base, typename... Args>
+    std::unique_ptr<Base, typename DIContainer::DeleterFunc> New(Args&&... args) {
+        return DIContainer::GetGlobalInstance().New<Base, Args...>(std::forward<Args>(args)...);
+    }
+
+    template <typename Service, typename Impl, typename... Args>
+    void RegisterService(Args&&... args) {
+        DIContainer::GetGlobalInstance().RegisterService<Service, Impl, Args...>(
+            std::forward<Args>(args)...
+        );
+    }
+
+    template <typename Service, typename... Args>
+    void ResetService(Args&&... args) {
+        DIContainer::GetGlobalInstance().ResetService<Service>(std::forward<Args>(args)...);
+    }
+
+    template <typename Service>
+    std::unique_ptr<Service, typename DIContainer::DeleterFunc>& Get() {
+        return DIContainer::GetGlobalInstance().Get<Service>();
+    }
 }

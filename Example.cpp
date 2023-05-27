@@ -78,4 +78,10 @@ int main() {
 
     auto newRadThing = container.New<RadInterface>(42);
     newRadThing->doRadStuff();
+
+    // Do things using the singleton
+    DependencyInjection::Register<CoolInterface, CoolClass>();
+
+    auto globalCoolThing = DependencyInjection::New<CoolInterface>();
+    globalCoolThing->doCoolStuff();
 }
