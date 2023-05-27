@@ -65,7 +65,7 @@ target_link_libraries(Example PRIVATE dependency_injection::dependency_injection
         {
             "kind": "git",
             "repository": "https://github.com/MrowrLib/Packages.git",
-            "baseline": "a10d9e3ed79e875558cfb1aa3cd012a71a102815",
+            "baseline": "af052b580642e068e2666e52e43ee3675b9d8bf8",
             "packages": ["mrowr-dependency-injection"]
         }
     ]
