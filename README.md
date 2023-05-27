@@ -39,8 +39,8 @@ target("Example")
 ```cmake
 add_executable(Example main.cpp)
 
-# Find string_format and link it to your target
-find_package(string_format CONFIG REQUIRED)
+# Find dependency_injection and link it to your target
+find_package(dependency_injection CONFIG REQUIRED)
 target_link_libraries(Example PRIVATE dependency_injection::dependency_injection)
 ```
 
