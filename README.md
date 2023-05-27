@@ -9,7 +9,7 @@ void Example() {
     auto thing = DependencyInjection::New<IThing>();
 
     // Register a long-lived service and get a reference to the instance
-    DependencyInjection::RegisterSingleton<IService, IServiceImpl>();
+    DependencyInjection::RegisterService<IService, IServiceImpl>();
     auto& service = DependencyInjection::Get<IService>();
 }
 ```
@@ -96,7 +96,7 @@ void Example() {
     auto thing = DependencyInjection::New<IThing>();
 
     // Register a long-lived service and get a reference to the instance
-    DependencyInjection::RegisterSingleton<IService, IServiceImpl>();
+    DependencyInjection::RegisterService<IService, IServiceImpl>();
     auto& service = DependencyInjection::Get<IService>();
 }
 ```
