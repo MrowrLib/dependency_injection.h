@@ -23,6 +23,8 @@ public:
         std::cout << "RadClass::RadClass(" << radNumber << ")" << std::endl;
     }
 
+    ~RadClass() { std::cout << "DELETE RadClass::~RadClass()" << std::endl; }
+
     void doRadStuff() override {
         std::cout << "RadClass::doRadStuff() with number " << radNumber << std::endl;
     }
@@ -39,6 +41,8 @@ class SomeServiceImpl : public SomeService {
 public:
     SomeServiceImpl() = default;
     SomeServiceImpl(int startCount) : counter(startCount) {}
+
+    ~SomeServiceImpl() { std::cout << "DELETE SomeServiceImpl::~SomeServiceImpl()" << std::endl; }
 
     void Increment() override { counter++; }
     int  GetCounter() override { return counter; }
