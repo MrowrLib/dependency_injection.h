@@ -16,7 +16,7 @@ void Example() {
 
 ## What?
 
-Simplest dependency injection interface that I could some up with.
+Simplest dependency injection / inversion of control container that I could think of.
 
 ## Installation
 
