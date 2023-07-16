@@ -20,7 +20,7 @@ int main() {
     // However: to allow that: provide a way to set a unique key
     // for the current runtime program.
 
-    DI.Register<ISomeService, SomeServiceImpl>();
+    // DI.Register<ISomeService, SomeServiceImpl>();
 
     //
     return 0;

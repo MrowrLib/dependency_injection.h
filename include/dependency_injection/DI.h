@@ -1,0 +1,1 @@
+// DI interface (static?)
