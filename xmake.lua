@@ -9,5 +9,6 @@ target("dependency_injection")
 
 target("Example")
     set_kind("binary")
-    add_files("Example.cpp")
+    add_files("Example.cpp", "Second Example File.cpp")
+    add_includedirs(".")
     add_deps("dependency_injection")
