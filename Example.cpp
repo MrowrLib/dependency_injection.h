@@ -48,8 +48,6 @@ public:
     int  GetCounter() override { return counter; }
 };
 
-using namespace DependencyInjection::Global;
-
 int main() {
     auto x = 69;
 
@@ -86,8 +84,8 @@ int main() {
     newRadThing->doRadStuff();
 
     // Do things using the singleton
-    RegisterSingleton<CoolInterface, CoolClass>();
+    DI::RegisterSingleton<CoolInterface, CoolClass>();
 
-    auto& globalCoolThing = GetSingleton<CoolInterface>();
+    auto& globalCoolThing = DI::GetSingleton<CoolInterface>();
     globalCoolThing->doCoolStuff();
 }

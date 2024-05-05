@@ -3,7 +3,7 @@
 ```cpp
 #include <dependency_injection.h>
 
-using namespace DependencyInjection::Global;
+using namespace DependencyInjection;
 
 void Example() {
     // Register a long-lived service and get a reference to the instance
