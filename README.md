@@ -3,14 +3,19 @@
 ```cpp
 #include <dependency_injection.h>
 
-void Example() {
-    // Register a type and get a unique instance of the derived type
-    DependencyInjection::Register<IThing, ThingImpl>();
-    auto thing = DependencyInjection::New<IThing>();
+using namespace DependencyInjection::Global;
 
+void Example() {
     // Register a long-lived service and get a reference to the instance
-    DependencyInjection::RegisterService<IService, IServiceImpl>();
-    auto& service = DependencyInjection::Get<IService>();
+    RegisterSingleton<ISingeton, ISingetonImpl>();
+    auto& service = GetSingleton<ISingeton>();
+
+    // Register a type and get a new instance of the derived type
+    RegisterTransient<IThing, ThingImpl>();
+    auto thing = GetTransient<IThing>();
+
+    // If the ThingImpl constructor requires arguments:
+    thing = GetTransient<IThing>(arg1, arg2, arg3);
 }
 ```
 
@@ -72,7 +77,7 @@ target_link_libraries(Example PRIVATE dependency_injection::dependency_injection
 }
 ```
 
-> _Update the default-registry baseline to the latest commit from https://github.com/microsoft/vcpkg_  
+> _Update the default-registry baseline to the latest commit from https://github.com/microsoft/vcpkg_
 > _Update the MrowrLib/Packages baseline to the latest commit from https://github.com/MrowrLib/Packages_
 
 ## Why?
@@ -96,8 +101,8 @@ void Example() {
     auto thing = DependencyInjection::New<IThing>();
 
     // Register a long-lived service and get a reference to the instance
-    DependencyInjection::RegisterService<IService, IServiceImpl>();
-    auto& service = DependencyInjection::Get<IService>();
+    DependencyInjection::Registersingleton<ISingleton, ISingletonImpl>();
+    auto& service = DependencyInjection::Get<ISingleton>();
 }
 ```
 
@@ -109,13 +114,13 @@ Or create your own container:
 void Example() {
     DependencyInjection::Container container;
 
-    // Register a type and get a unique instance of the derived type
-    container.Register<IThing, ThingImpl>();
+    // Register a type and get a new instance of the derived type
+    container.RegisterTransient<IThing, ThingImpl>();
     auto thing = container.New<IThing>();
 
     // Register a long-lived service and get a reference to the instance
-    container.RegisterService<IService, IServiceImpl>();
-    auto& service = container.Get<IService>();
+    container.RegisterSingleton<ISingleton, ISingletonImpl>();
+    auto& service = container.Get<ISingleton>();
 }
 ```
 

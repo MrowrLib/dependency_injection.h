@@ -48,44 +48,46 @@ public:
     int  GetCounter() override { return counter; }
 };
 
+using namespace DependencyInjection::Global;
+
 int main() {
     auto x = 69;
 
-    DependencyInjection::DIContainer container;
+    DependencyInjection::Container container;
 
-    container.RegisterService<SomeService, SomeServiceImpl>();
+    container.RegisterSingleton<SomeService, SomeServiceImpl>();
 
-    auto& someServiceReference = container.Get<SomeService>();
+    auto& someServiceReference = container.GetSingleton<SomeService>();
     someServiceReference->Increment();
     someServiceReference->Increment();
     std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
               << std::endl;
 
     // But we can also reset it so it makes a new instance
-    container.ResetService<SomeService>();
+    container.ResetSingleton<SomeService>();
     std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
               << std::endl;  // should be 0 now, new instance of SomeServiceImpl
 
     // Finally, I want to support passing constructor arguments in both of these scenarios:
-    // 1 - on RegisterService
-    // 2 - on ResetService
-    // container.RegisterService<SomeService, SomeServiceImpl>(42);
-    // // or on ResetService
-    // container.ResetService<SomeService>(42);
+    // 1 - on RegisterSingleton
+    // 2 - on ResetSingleton
+    // container.RegisterSingleton<SomeService, SomeServiceImpl>(42);
+    // // or on ResetSingleton
+    // container.ResetSingleton<SomeService>(42);
 
     // previous examples should still work, of course
     container.Register<CoolInterface, CoolClass>();
     container.Register<RadInterface, RadClass, int>();
 
-    auto newCoolThing = container.New<CoolInterface>();
+    auto newCoolThing = container.GetTransient<CoolInterface>();
     newCoolThing->doCoolStuff();
 
-    auto newRadThing = container.New<RadInterface>(42);
+    auto newRadThing = container.GetTransient<RadInterface>(42);
     newRadThing->doRadStuff();
 
     // Do things using the singleton
-    DependencyInjection::Register<CoolInterface, CoolClass>();
+    RegisterSingleton<CoolInterface, CoolClass>();
 
-    auto globalCoolThing = DependencyInjection::New<CoolInterface>();
+    auto& globalCoolThing = GetSingleton<CoolInterface>();
     globalCoolThing->doCoolStuff();
 }
