@@ -91,9 +91,9 @@ int main() {
 
     // Test passing an instance...
     SomeServiceImpl someServiceInstance(123);
-    DI::RegisterSingleton<SomeService, SomeServiceImpl>(someServiceInstance);
+    DI::RegisterSingleton<SomeServiceImpl>(someServiceInstance);
 
-    auto& someServiceReference = DI::GetSingleton<SomeService>();
+    auto& someServiceReference = DI::GetSingleton<SomeServiceImpl>();
     std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
               << std::endl;
 }

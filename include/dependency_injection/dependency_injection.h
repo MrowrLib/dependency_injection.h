@@ -14,9 +14,9 @@ namespace DependencyInjection {
         Container::GetGlobalInstance().RegisterSingleton<Base, Impl, Args...>();
     }
 
-    template <typename Base, typename Impl, typename... Args>
+    template <typename Base, typename Impl>
     inline void RegisterSingleton(Impl& singleton) {
-        Container::GetGlobalInstance().RegisterSingleton<Base, Impl, Args...>(singleton);
+        Container::GetGlobalInstance().RegisterSingleton<Base, Impl>(singleton);
     }
 
     template <typename Base, typename... Args>

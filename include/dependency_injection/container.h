@@ -92,9 +92,9 @@ namespace DependencyInjection {
             Register<Singleton, Impl, Args...>(Lifetime::Singleton);
         }
 
-        template <typename Singleton, typename Impl, typename... Args>
+        template <typename Singleton, typename Impl>
         void RegisterSingleton(Impl& singleton) {
-            Register<Singleton, Impl, Args...>(Lifetime::Singleton);
+            Register<Singleton, Impl>(Lifetime::Singleton);
             _singletons[typeid(Singleton)] =
                 std::unique_ptr<Impl, DeleterFunc>(&singleton, [](void*) {});
         }
