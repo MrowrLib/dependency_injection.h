@@ -49,43 +49,51 @@ public:
 };
 
 int main() {
-    auto x = 69;
+    // auto x = 69;
 
-    DependencyInjection::Container container;
+    // DependencyInjection::Container container;
 
-    container.RegisterSingleton<SomeService, SomeServiceImpl>();
+    // container.RegisterSingleton<SomeService, SomeServiceImpl>();
 
-    auto& someServiceReference = container.GetSingleton<SomeService>();
-    someServiceReference->Increment();
-    someServiceReference->Increment();
+    // auto& someServiceReference = container.GetSingleton<SomeService>();
+    // someServiceReference->Increment();
+    // someServiceReference->Increment();
+    // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
+    //           << std::endl;
+
+    // // But we can also reset it so it makes a new instance
+    // container.ResetSingleton<SomeService>();
+    // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
+    //           << std::endl;  // should be 0 now, new instance of SomeServiceImpl
+
+    // // Finally, I want to support passing constructor arguments in both of these scenarios:
+    // // 1 - on RegisterSingleton
+    // // 2 - on ResetSingleton
+    // // container.RegisterSingleton<SomeService, SomeServiceImpl>(42);
+    // // // or on ResetSingleton
+    // // container.ResetSingleton<SomeService>(42);
+
+    // // previous examples should still work, of course
+    // container.Register<CoolInterface, CoolClass>();
+    // container.Register<RadInterface, RadClass, int>();
+
+    // auto newCoolThing = container.GetTransient<CoolInterface>();
+    // newCoolThing->doCoolStuff();
+
+    // auto newRadThing = container.GetTransient<RadInterface>(42);
+    // newRadThing->doRadStuff();
+
+    // // Do things using the singleton
+    // DI::RegisterSingleton<CoolInterface, CoolClass>();
+
+    // auto& globalCoolThing = DI::GetSingleton<CoolInterface>();
+    // globalCoolThing->doCoolStuff();
+
+    // Test passing an instance...
+    SomeServiceImpl someServiceInstance(123);
+    DI::RegisterSingleton<SomeService, SomeServiceImpl>(someServiceInstance);
+
+    auto& someServiceReference = DI::GetSingleton<SomeService>();
     std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
               << std::endl;
-
-    // But we can also reset it so it makes a new instance
-    container.ResetSingleton<SomeService>();
-    std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
-              << std::endl;  // should be 0 now, new instance of SomeServiceImpl
-
-    // Finally, I want to support passing constructor arguments in both of these scenarios:
-    // 1 - on RegisterSingleton
-    // 2 - on ResetSingleton
-    // container.RegisterSingleton<SomeService, SomeServiceImpl>(42);
-    // // or on ResetSingleton
-    // container.ResetSingleton<SomeService>(42);
-
-    // previous examples should still work, of course
-    container.Register<CoolInterface, CoolClass>();
-    container.Register<RadInterface, RadClass, int>();
-
-    auto newCoolThing = container.GetTransient<CoolInterface>();
-    newCoolThing->doCoolStuff();
-
-    auto newRadThing = container.GetTransient<RadInterface>(42);
-    newRadThing->doRadStuff();
-
-    // Do things using the singleton
-    DI::RegisterSingleton<CoolInterface, CoolClass>();
-
-    auto& globalCoolThing = DI::GetSingleton<CoolInterface>();
-    globalCoolThing->doCoolStuff();
 }

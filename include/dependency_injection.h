@@ -1,5 +1,5 @@
 #pragma once
 
-#include "dependency_injection/global.h"  // IWYU pragma: keep
+#include "dependency_injection/dependency_injection.h"  // IWYU pragma: keep
 
 namespace DI = DependencyInjection;
