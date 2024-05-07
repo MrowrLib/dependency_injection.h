@@ -43,7 +43,7 @@ namespace DependencyInjection {
         Lifetime GetLifetime() {
             auto it = _lifetimes.find(typeid(Base));
             if (it != _lifetimes.end()) return it->second;
-            throw std::logic_error("Type not registered.");
+            throw std::logic_error("Type not registered: " + std::string(typeid(Base).name()));
         }
 
         template <typename Singleton, typename... Args>
