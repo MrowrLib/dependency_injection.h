@@ -5,29 +5,46 @@
 namespace DependencyInjection {
 
     template <typename Base, typename Derived, typename... Args>
-    inline void Register(Lifetime lifetime = Lifetime::Transient) {
-        Container::GetGlobalInstance().Register<Base, Derived, Args...>();
+    inline void RegisterInterface(Lifetime lifetime = Lifetime::Transient) {
+        Container::GetGlobalInstance().RegisterInterface<Base, Derived, Args...>();
     }
 
-    template <typename Base, typename Impl, typename... Args>
-    inline void RegisterSingleton() {
-        Container::GetGlobalInstance().RegisterSingleton<Base, Impl, Args...>();
+    template <typename Impl, typename... Args>
+    inline void RegisterType(Lifetime lifetime = Lifetime::Transient) {
+        Container::GetGlobalInstance().RegisterType<Impl, Args...>();
     }
 
-    template <typename Base, typename Impl>
-    inline void RegisterSingleton(Impl& singleton) {
-        Container::GetGlobalInstance().RegisterSingleton<Base, Impl>(singleton);
+    template <typename Base, typename Derived, typename... Args>
+    inline void RegisterSingletonInterface(Args&&... args) {
+        Container::GetGlobalInstance().RegisterSingletonInterface<Base, Derived, Args...>(
+            std::forward<Args>(args)...
+        );
     }
 
-    template <typename Base, typename... Args>
-    inline std::unique_ptr<Base, typename Container::DeleterFunc> GetTransient(Args&&... args) {
-        return Container::GetGlobalInstance().GetTransient<Base, Args...>(std::forward<Args>(args
+    template <typename Impl, typename... Args>
+    inline void RegisterSingletonType(Args&&... args) {
+        Container::GetGlobalInstance().RegisterSingletonType<Impl, Args...>(std::forward<Args>(args
         )...);
     }
 
     template <typename Base>
-    inline std::unique_ptr<Base, typename Container::DeleterFunc>& GetSingleton() {
-        return Container::GetGlobalInstance().GetSingleton<Base>();
+    inline void RegisterSingleton(Base& singleton) {
+        Container::GetGlobalInstance().RegisterSingleton<Base>(singleton);
+    }
+
+    template <typename Base>
+    inline void RegisterSingleton(std::unique_ptr<Base> singletonPtr) {
+        Container::GetGlobalInstance().RegisterSingleton<Base>(std::move(singletonPtr));
+    }
+
+    template <typename Base, typename... Args>
+    inline std::unique_ptr<Base, typename Container::DeleterFunc> Make(Args&&... args) {
+        return Container::GetGlobalInstance().Make<Base, Args...>(std::forward<Args>(args)...);
+    }
+
+    template <typename Base>
+    inline std::unique_ptr<Base, typename Container::DeleterFunc>& Get() {
+        return Container::GetGlobalInstance().Get<Base>();
     }
 
     template <typename Base, typename... Args>

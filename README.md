@@ -3,25 +3,54 @@
 ```cpp
 #include <dependency_injection.h>
 
-using namespace DependencyInjection;
-
 void Example() {
-    // Register a long-lived service and get a reference to the instance
-    RegisterSingleton<ISingeton, ISingetonImpl>();
-    auto& service = GetSingleton<ISingeton>();
+    // Given a type, create a new instance
+    auto dog = DI::Make<Dog>();
 
-    // Register a type and get a new instance of the derived type
-    RegisterTransient<IThing, ThingImpl>();
-    auto thing = GetTransient<IThing>();
+    // Provide constructor arguments, if available
+    auto cat = DI::Make<Cat>("Fluffy");
 
-    // If the ThingImpl constructor requires arguments:
-    thing = GetTransient<IThing>(arg1, arg2, arg3);
+    // Or get a reference to a singleton instance
+    auto& instance = DI::Get<MySingleton>();
 }
+
+// Elsewhere in the code, setup these types...
+void Setup() {
+    // Register Dog so it created a new DogImplementation
+    DI::RegisterInterface<Dog, DogImplementation>();
+
+    // Or it can directly create a concrete type
+    DI::RegisterType<Dog>();
+
+    // You can define arguments for the constructor
+    DI::RegisterInterface<Cat, CatImplementation, std::string>();
+    DI::RegisterType<Cat, std::string>();
+
+    // Singletons can given types or interfaces
+    // and DI will automatically construct the instance
+    DI::RegisterSingletonType<MySingleton>();
+    DI::RegisterSingletonInterface<MySingleton, MySingletonImplementation>();
+
+    // Singletons also support constructor arguments
+    DI::RegisterSingletonInterface<MySingleton, MySingletonImplementation, int, std::string>(42, "The Answer");
+    DI::RegisterSingletonType<MySingleton, int, std::string>(42, "The Answer");
+
+    // You can reset a singleton which will delete the instance and make a new one
+    DI::ResetSingleton<MySingleton>();
+    DI::ResetSingleton<MySingleton>(42, "The Answer"); // if constructor arguments
+
+    // Finally, if you want to provide your own reference or unique_ptr to a singleton, you can
+    DI::RegisterSingleton<MySingleton>(exampleSingletonInstance);
+    DI::RegisterSingleton<MySingleton>(std::make_unique<MySingleton>());
+    DI::RegisterSingleton<MySingleton>(std::move(existingUniquePtr));
+}
+
+MySingleton exampleSingletonInstance;
 ```
 
 ## What?
 
-Simplest dependency injection / inversion of control container that I could think of.
+Dependency Injection / Inversion of Control container for C++
 
 ## Installation
 
@@ -88,41 +117,6 @@ I just need:
 - Register a type and get a unique instance of the derived type
 - Register a long-lived service and get a reference to the instance
 
-## How?
-
-Either use the global interface (_which uses a global singleton container_):
-
-```cpp
-#include <dependency_injection.h>
-
-void Example() {
-    // Register a type and get a unique instance of the derived type
-    DependencyInjection::Register<IThing, ThingImpl>();
-    auto thing = DependencyInjection::New<IThing>();
-
-    // Register a long-lived service and get a reference to the instance
-    DependencyInjection::Registersingleton<ISingleton, ISingletonImpl>();
-    auto& service = DependencyInjection::Get<ISingleton>();
-}
-```
-
-Or create your own container:
-
-```cpp
-#include <dependency_injection.h>
-
-void Example() {
-    DependencyInjection::Container container;
-
-    // Register a type and get a new instance of the derived type
-    container.RegisterTransient<IThing, ThingImpl>();
-    auto thing = container.New<IThing>();
-
-    // Register a long-lived service and get a reference to the instance
-    container.RegisterSingleton<ISingleton, ISingletonImpl>();
-    auto& service = container.Get<ISingleton>();
-}
-```
 
 ## License
 

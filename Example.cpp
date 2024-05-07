@@ -1,6 +1,9 @@
 #include <dependency_injection.h>
 
+#include <fstream>
 #include <iostream>
+
+std::ofstream logFile("destructor_log.txt");
 
 struct CoolInterface {
     virtual void doCoolStuff() = 0;
@@ -31,6 +34,7 @@ public:
 };
 
 struct SomeService {
+    virtual ~SomeService()    = default;
     virtual void Increment()  = 0;
     virtual int  GetCounter() = 0;
 };
@@ -39,23 +43,47 @@ class SomeServiceImpl : public SomeService {
     int counter = 0;
 
 public:
-    SomeServiceImpl() = default;
-    SomeServiceImpl(int startCount) : counter(startCount) {}
+    SomeServiceImpl() { std::cout << "SomeServiceImpl::SomeServiceImpl()" << std::endl; }
+    SomeServiceImpl(int startCount) : counter(startCount) {
+        std::cout << "SomeServiceImpl::SomeServiceImpl(" << startCount << ")" << std::endl;
+    }
 
-    ~SomeServiceImpl() { std::cout << "DELETE SomeServiceImpl::~SomeServiceImpl()" << std::endl; }
+    ~SomeServiceImpl() {
+        //
+        std::cout << "DELETE SomeServiceImpl::~SomeServiceImpl()" << std::endl;
+        if (logFile.is_open()) {
+            logFile << "DELETE SomeServiceImpl::~SomeServiceImpl() with counter " << counter
+                    << std::endl;
+        }
+    }
 
     void Increment() override { counter++; }
     int  GetCounter() override { return counter; }
 };
 
-int main() {
+class SomeConcreteClass {
+    int counter = 0;
+
+public:
+    SomeConcreteClass() { std::cout << "SomeConcreteClass::SomeConcreteClass()" << std::endl; }
+    ~SomeConcreteClass() {
+        std::cout << "DELETE SomeConcreteClass::~SomeConcreteClass()" << std::endl;
+    }
+
+    void Increment() { counter++; }
+    int  GetCounter() { return counter; }
+};
+
+// SomeServiceImpl someServiceInstance(123);
+
+void doThings() {
     // auto x = 69;
 
-    // DependencyInjection::Container container;
+    DependencyInjection::Container container;
 
     // container.RegisterSingleton<SomeService, SomeServiceImpl>();
 
-    // auto& someServiceReference = container.GetSingleton<SomeService>();
+    // auto& someServiceReference = container.Get<SomeService>();
     // someServiceReference->Increment();
     // someServiceReference->Increment();
     // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
@@ -74,26 +102,73 @@ int main() {
     // // container.ResetSingleton<SomeService>(42);
 
     // // previous examples should still work, of course
-    // container.Register<CoolInterface, CoolClass>();
-    // container.Register<RadInterface, RadClass, int>();
+    // container.RegisterType<CoolClass>();
+    // // container.Register<CoolInterface, CoolClass>();
+    // container.RegisterInterface<RadInterface, RadClass, int>();
 
-    // auto newCoolThing = container.GetTransient<CoolInterface>();
+    // auto newCoolThing = container.Make<CoolClass>();
+    // // auto newCoolThing = container.Make<CoolInterface>();
     // newCoolThing->doCoolStuff();
 
-    // auto newRadThing = container.GetTransient<RadInterface>(42);
+    // auto newRadThing = container.Make<RadInterface>(42);
     // newRadThing->doRadStuff();
 
     // // Do things using the singleton
     // DI::RegisterSingleton<CoolInterface, CoolClass>();
 
-    // auto& globalCoolThing = DI::GetSingleton<CoolInterface>();
+    // auto& globalCoolThing = DI::Get<CoolInterface>();
     // globalCoolThing->doCoolStuff();
 
     // Test passing an instance...
-    SomeServiceImpl someServiceInstance(123);
-    DI::RegisterSingleton<SomeServiceImpl>(someServiceInstance);
+    // SomeServiceImpl someServiceInstance(123);
+    // DI::RegisterSingleton<SomeServiceImpl>(someServiceInstance);
 
-    auto& someServiceReference = DI::GetSingleton<SomeServiceImpl>();
-    std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
-              << std::endl;
+    // auto& someServiceReference = DI::Get<SomeServiceImpl>();
+    // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
+    //           << std::endl;
+
+    // auto instance = std::unique_ptr<SomeService>(new SomeServiceImpl{123});
+    // DI::RegisterSingleton<SomeService>(std::move(instance));
+
+    // auto& someServiceReference = DI::Get<SomeService>();
+    // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
+    //           << std::endl;
+
+    // DI::RegisterSingleton<SomeConcreteClass>(std::make_unique<SomeConcreteClass>());
+    // auto& someServiceReference = DI::Get<SomeConcreteClass>();
+    // someServiceReference->Increment();
+
+    // DI::RegisterSingletonType<RadClass>(42);
+    // auto& radThing = DI::Get<RadClass>();
+    // radThing->doRadStuff();
+
+    DI::RegisterSingletonInterface<RadInterface, RadClass>(42);
+    auto& radThing = DI::Get<RadInterface>();
+    radThing->doRadStuff();
+
+    // DI::RegisterSingletonInterface<CoolInterface, CoolClass>();
+    // auto& coolThing = DI::Get<CoolInterface>();
+    // coolThing->doCoolStuff();
+}
+
+int main() {
+    try {
+        doThings();
+
+        // The some service I registered should be deleted here...
+        // Let's try to get it anyway
+        // auto& someServiceReference = DI::Get<SomeServiceImpl>();
+
+        // // This should throw an exception
+        // someServiceReference->Increment();
+
+        // std::cout << "someServiceReference->GetCounter() = " <<
+        // someServiceReference->GetCounter()
+        //           << std::endl;
+
+        // DI::ResetSingleton<SomeService>();
+    } catch (const std::exception& e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    }
+    return 0;
 }

@@ -24,13 +24,15 @@ namespace DependencyInjection {
         template <typename Base>
         inline auto GetFactory() {
             auto it = _factories.find(typeid(Base));
+            if (it->second == nullptr)
+                throw std::logic_error(
+                    "Type has no factory function: " + std::string(typeid(Base).name())
+                );
             if (it != _factories.end()) return it->second;
-            throw std::logic_error("Type not registered.");
+            throw std::logic_error("Type not registered: " + std::string(typeid(Base).name()));
         }
 
     public:
-        Container() = default;
-
         template <typename Base>
         bool IsRegistered() {
             return _factories.find(typeid(Base)) != _factories.end();
@@ -60,7 +62,7 @@ namespace DependencyInjection {
         }
 
         template <typename Base, typename Derived, typename... Args>
-        void Register(Lifetime lifetime = Lifetime::Transient) {
+        void RegisterInterface(Lifetime lifetime = Lifetime::Transient) {
             // Create factory function
             auto factory = [](std::any args) {
                 auto     argsTuple = std::any_cast<std::tuple<Args...>>(args);
@@ -78,30 +80,53 @@ namespace DependencyInjection {
 
             // Store lifetime associated with the type
             _lifetimes[typeid(Base)] = lifetime;
-
-            // Setup singleton instance if it is a singleton
-            if (lifetime == Lifetime::Singleton) {
-                auto [raw_ptr, deleter] = factory(std::make_tuple(Args{}...));
-                std::unique_ptr<void, DeleterFunc> singleton(raw_ptr, deleter);
-                _singletons[typeid(Base)] = std::move(singleton);
-            }
         }
 
-        template <typename Singleton, typename Impl, typename... Args>
-        void RegisterSingleton() {
-            Register<Singleton, Impl, Args...>(Lifetime::Singleton);
+        template <typename Impl, typename... Args>
+        void RegisterType(Lifetime lifetime = Lifetime::Transient) {
+            RegisterInterface<Impl, Impl, Args...>(lifetime);
         }
 
-        template <typename Singleton, typename Impl>
-        void RegisterSingleton(Impl& singleton) {
-            Register<Singleton, Impl>(Lifetime::Singleton);
-            _singletons[typeid(Singleton)] =
-                std::unique_ptr<Impl, DeleterFunc>(&singleton, [](void*) {});
+        template <typename Base, typename Impl, typename... Args>
+        void RegisterSingletonInterface(Args&&... args) {
+            RegisterInterface<Base, Impl, Args...>(Lifetime::Singleton);
+            ResetSingleton<Base>(std::forward<Args>(args)...);
+        }
+
+        template <typename Impl, typename... Args>
+        void RegisterSingletonType(Args&&... args) {
+            RegisterType<Impl, Args...>(Lifetime::Singleton);
+            ResetSingleton<Impl>(std::forward<Args>(args)...);
+        }
+
+        template <typename Base>
+        void RegisterSingleton(Base& singleton) {
+            _factories[typeid(Base)] = nullptr;
+            _lifetimes[typeid(Base)] = Lifetime::Singleton;
+            _singletons[typeid(Base)] =
+                std::unique_ptr<Base, DeleterFunc>(&singleton, [](void*) {});
+        }
+
+        template <typename Base>
+        void RegisterSingleton(std::unique_ptr<Base> singletonPtr) {
+            _factories[typeid(Base)] = nullptr;
+            _lifetimes[typeid(Base)] = Lifetime::Singleton;
+
+            auto*       raw_ptr = singletonPtr.release();
+            DeleterFunc deleter = [raw_ptr, captured_deleter =
+                                                singletonPtr.get_deleter()](void* ptr) mutable {
+                std::unique_ptr<Base, decltype(captured_deleter)> temp_ptr(
+                    static_cast<Base*>(ptr), std::move(captured_deleter)
+                );
+                temp_ptr.reset();
+            };
+
+            _singletons[typeid(Base)] = std::unique_ptr<void, DeleterFunc>(raw_ptr, deleter);
         }
 
         // Update the Get() below to support any number of arguments
         template <typename Singleton>
-        std::unique_ptr<Singleton, DeleterFunc>& GetSingleton() {
+        std::unique_ptr<Singleton, DeleterFunc>& Get() {
             if (GetLifetime<Singleton>() != Lifetime::Singleton)
                 throw std::logic_error("Type is not singleton.");
 
@@ -112,7 +137,7 @@ namespace DependencyInjection {
         }
 
         template <typename Transient, typename... Args>
-        std::unique_ptr<Transient, DeleterFunc> GetTransient(Args&&... args) {
+        std::unique_ptr<Transient, DeleterFunc> Make(Args&&... args) {
             if (GetLifetime<Transient>() != Lifetime::Transient)
                 throw std::logic_error("Type is not transient.");
 
