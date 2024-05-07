@@ -49,7 +49,9 @@ namespace DependencyInjection {
         template <typename Singleton, typename... Args>
         void ResetSingleton(Args&&... args) {
             if (GetLifetime<Singleton>() != Lifetime::Singleton)
-                throw std::logic_error("Singleton is not a singleton.");
+                throw std::logic_error(
+                    "Singleton is not a singleton: " + std::string(typeid(Singleton).name())
+                );
 
             // Get the factory function
             auto factory = GetFactory<Singleton>();
@@ -63,9 +65,11 @@ namespace DependencyInjection {
         }
 
         template <typename Base>
-        void ResetSingleton(Base* singletonPtr) {
+        void ResetSingletonPointer(Base* singletonPtr) {
             if (GetLifetime<Base>() != Lifetime::Singleton)
-                throw std::logic_error("Singleton is not a singleton.");
+                throw std::logic_error(
+                    "Singleton is not a singleton: " + std::string(typeid(Base).name())
+                );
 
             _singletonsRawPtrs[typeid(Base)] = singletonPtr;
 
@@ -122,7 +126,7 @@ namespace DependencyInjection {
         template <typename Base>
         void RegisterSingleton(Base* singletonPtr) {
             _lifetimes[typeid(Base)] = Lifetime::Singleton;
-            ResetSingleton<Base>(singletonPtr);
+            ResetSingletonPointer<Base>(singletonPtr);
         }
 
         template <typename Base>
@@ -145,7 +149,9 @@ namespace DependencyInjection {
         template <typename Singleton>
         Singleton* Get() {
             if (GetLifetime<Singleton>() != Lifetime::Singleton)
-                throw std::logic_error("Type is not singleton.");
+                throw std::logic_error(
+                    "Type is not singleton: " + std::string(typeid(Singleton).name())
+                );
 
             auto it = _singletons.find(typeid(Singleton));
             if (it != _singletons.end())
@@ -155,13 +161,17 @@ namespace DependencyInjection {
             if (it_raw_ptr != _singletonsRawPtrs.end())
                 return static_cast<Singleton*>(it_raw_ptr->second);
 
-            throw std::logic_error("Singleton not created.");
+            throw std::logic_error(
+                "Singleton not created: " + std::string(typeid(Singleton).name())
+            );
         }
 
         template <typename Transient, typename... Args>
         std::unique_ptr<Transient, DeleterFunc> Make(Args&&... args) {
             if (GetLifetime<Transient>() != Lifetime::Transient)
-                throw std::logic_error("Type is not transient.");
+                throw std::logic_error(
+                    "Type is not transient: " + std::string(typeid(Transient).name())
+                );
 
             auto factory            = GetFactory<Transient>();
             auto [raw_ptr, deleter] = factory(std::make_tuple(std::forward<Args>(args)...));
