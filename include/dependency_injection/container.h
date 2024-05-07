@@ -20,6 +20,7 @@ namespace DependencyInjection {
         std::unordered_map<std::type_index, std::function<std::pair<void*, DeleterFunc>(std::any)>>
                                                                                 _factories;
         std::unordered_map<std::type_index, std::unique_ptr<void, DeleterFunc>> _singletons;
+        std::unordered_map<std::type_index, void*>                              _singletonsRawPtrs;
 
         template <typename Base>
         inline auto GetFactory() {
@@ -59,6 +60,17 @@ namespace DependencyInjection {
             // Store the new instance of the singleton
             std::unique_ptr<void, DeleterFunc> singleton(raw_ptr, deleter);
             _singletons[typeid(Singleton)] = std::move(singleton);
+        }
+
+        template <typename Base>
+        void ResetSingleton(Base* singletonPtr) {
+            if (GetLifetime<Base>() != Lifetime::Singleton)
+                throw std::logic_error("Singleton is not a singleton.");
+
+            _factories[typeid(Base)]         = nullptr;
+            _lifetimes[typeid(Base)]         = Lifetime::Singleton;
+            _singletons[typeid(Base)]        = nullptr;
+            _singletonsRawPtrs[typeid(Base)] = singletonPtr;
         }
 
         template <typename Base, typename Derived, typename... Args>
@@ -108,6 +120,14 @@ namespace DependencyInjection {
         }
 
         template <typename Base>
+        void RegisterSingleton(Base* singletonPtr) {
+            _factories[typeid(Base)]         = nullptr;
+            _lifetimes[typeid(Base)]         = Lifetime::Singleton;
+            _singletons[typeid(Base)]        = nullptr;
+            _singletonsRawPtrs[typeid(Base)] = singletonPtr;
+        }
+
+        template <typename Base>
         void RegisterSingleton(std::unique_ptr<Base> singletonPtr) {
             _factories[typeid(Base)] = nullptr;
             _lifetimes[typeid(Base)] = Lifetime::Singleton;
@@ -124,15 +144,19 @@ namespace DependencyInjection {
             _singletons[typeid(Base)] = std::unique_ptr<void, DeleterFunc>(raw_ptr, deleter);
         }
 
-        // Update the Get() below to support any number of arguments
         template <typename Singleton>
-        std::unique_ptr<Singleton, DeleterFunc>& Get() {
+        Singleton* Get() {
             if (GetLifetime<Singleton>() != Lifetime::Singleton)
                 throw std::logic_error("Type is not singleton.");
 
             auto it = _singletons.find(typeid(Singleton));
             if (it != _singletons.end())
-                return reinterpret_cast<std::unique_ptr<Singleton, DeleterFunc>&>(it->second);
+                return reinterpret_cast<std::unique_ptr<Singleton, DeleterFunc>&>(it->second).get();
+
+            auto it_raw_ptr = _singletonsRawPtrs.find(typeid(Singleton));
+            if (it_raw_ptr != _singletonsRawPtrs.end())
+                return static_cast<Singleton*>(it_raw_ptr->second);
+
             throw std::logic_error("Singleton not created.");
         }
 

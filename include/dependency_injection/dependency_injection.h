@@ -33,6 +33,11 @@ namespace DependencyInjection {
     }
 
     template <typename Base>
+    inline void RegisterSingleton(Base* singletonPtr) {
+        Container::GetGlobalInstance().RegisterSingleton<Base>(singletonPtr);
+    }
+
+    template <typename Base>
     inline void RegisterSingleton(std::unique_ptr<Base> singletonPtr) {
         Container::GetGlobalInstance().RegisterSingleton<Base>(std::move(singletonPtr));
     }
@@ -43,7 +48,7 @@ namespace DependencyInjection {
     }
 
     template <typename Base>
-    inline std::unique_ptr<Base, typename Container::DeleterFunc>& Get() {
+    inline Base* Get() {
         return Container::GetGlobalInstance().Get<Base>();
     }
 

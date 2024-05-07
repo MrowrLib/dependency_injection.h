@@ -120,17 +120,17 @@ void doThings() {
     // globalCoolThing->doCoolStuff();
 
     // Test passing an instance...
-    // SomeServiceImpl someServiceInstance(123);
-    // DI::RegisterSingleton<SomeServiceImpl>(someServiceInstance);
+    SomeServiceImpl someServiceInstance(123);
+    DI::RegisterSingleton<SomeServiceImpl>(someServiceInstance);
 
-    // auto& someServiceReference = DI::Get<SomeServiceImpl>();
-    // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
-    //           << std::endl;
+    auto* someServiceReference = DI::Get<SomeServiceImpl>();
+    std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
+              << std::endl;
 
     // auto instance = std::unique_ptr<SomeService>(new SomeServiceImpl{123});
     // DI::RegisterSingleton<SomeService>(std::move(instance));
 
-    // auto& someServiceReference = DI::Get<SomeService>();
+    // auto* someServiceReference = DI::Get<SomeService>();
     // std::cout << "someServiceReference->GetCounter() = " << someServiceReference->GetCounter()
     //           << std::endl;
 
@@ -142,12 +142,12 @@ void doThings() {
     // auto& radThing = DI::Get<RadClass>();
     // radThing->doRadStuff();
 
-    DI::RegisterSingletonInterface<RadInterface, RadClass>(42);
-    auto& radThing = DI::Get<RadInterface>();
-    radThing->doRadStuff();
+    // DI::RegisterSingletonInterface<RadInterface, RadClass>(42);
+    // auto* radThing = DI::Get<RadInterface>();
+    // radThing->doRadStuff();
 
     // DI::RegisterSingletonInterface<CoolInterface, CoolClass>();
-    // auto& coolThing = DI::Get<CoolInterface>();
+    // auto* coolThing = DI::Get<CoolInterface>();
     // coolThing->doCoolStuff();
 }
 

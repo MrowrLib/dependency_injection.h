@@ -10,8 +10,8 @@ void Example() {
     // Provide constructor arguments, if available
     auto cat = DI::Make<Cat>("Fluffy");
 
-    // Or get a reference to a singleton instance
-    auto& instance = DI::Get<MySingleton>();
+    // Or get a pointer to a singleton instance
+    auto* instance = DI::Get<MySingleton>();
 }
 
 // Elsewhere in the code, setup these types...
