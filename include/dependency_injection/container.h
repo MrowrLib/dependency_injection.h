@@ -67,10 +67,10 @@ namespace DependencyInjection {
             if (GetLifetime<Base>() != Lifetime::Singleton)
                 throw std::logic_error("Singleton is not a singleton.");
 
-            _factories[typeid(Base)]         = nullptr;
-            _lifetimes[typeid(Base)]         = Lifetime::Singleton;
-            _singletons[typeid(Base)]        = nullptr;
             _singletonsRawPtrs[typeid(Base)] = singletonPtr;
+
+            auto existing_singleton = _singletons.find(typeid(Base));
+            if (existing_singleton != _singletons.end()) existing_singleton->second.reset();
         }
 
         template <typename Base, typename Derived, typename... Args>
@@ -121,10 +121,8 @@ namespace DependencyInjection {
 
         template <typename Base>
         void RegisterSingleton(Base* singletonPtr) {
-            _factories[typeid(Base)]         = nullptr;
-            _lifetimes[typeid(Base)]         = Lifetime::Singleton;
-            _singletons[typeid(Base)]        = nullptr;
-            _singletonsRawPtrs[typeid(Base)] = singletonPtr;
+            _lifetimes[typeid(Base)] = Lifetime::Singleton;
+            ResetSingleton<Base>(singletonPtr);
         }
 
         template <typename Base>
