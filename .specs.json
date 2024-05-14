@@ -1,0 +1,17 @@
+{
+    "suites": [
+        {
+            "name": "Dependency Injection Project",
+            "pattern": "(?<filepath>.+):(?<linenumber>\\d+) (?<description>.+)",
+            "build": "xmake f -q -m debug && xmake build",
+            "discover": "\"build/windows/x64/debug/Tests.exe\" --list",
+            "groupSeparator": " > ",
+            "run": "\"build/windows/x64/debug/Tests.exe\" --file {file} --line {line}",
+            "debug": "build/windows/x64/debug/Tests.exe",
+            "debugger": "cppvsdbg"
+        }
+    ],
+    "defaults": {
+        "pattern": "(?<filepath>[^\\|]+)\\|(?<linenumber>\\d+)\\|(?<tags>[^\\|]+)\\|(?<description>[^\\|]+)"
+    }
+}
