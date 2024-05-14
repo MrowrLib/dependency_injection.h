@@ -1,3 +1,4 @@
 TODO:
 - [ ] Add support for passing a lambda for the factory
-- [ ] MAYBE support for raw pointers to `RegisterSingleton`
+- [ ] Add support for NAMED dependencies (singleton and transient)
+- [ ] Add `MakeShared` (and `MakeUnique` and `New`)
