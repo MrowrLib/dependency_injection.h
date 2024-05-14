@@ -1,31 +1,45 @@
 #pragma once
 
-#include <string_view>
+#include <collections.h>
+#include <void_pointer.h>
 
-#include "IContainer.h"
-#include "IContainerStorage.h"
-#include "IRegistry.h"
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 namespace DependencyInjection {
 
-    class Container : public IContainer,         // Consumer interface, e.g. Get<T>
-                      public IContainerStorage,  // Storage interface, e.g. containers
-                      public IRegistry           // Registration interface, e.g. Register<T>
-    {
+    class Container {
+        collections_map<std::string, void_ptr> namedSingletons;
+
     public:
         /*
-            IContainer implementation
+            Container storage functions
         */
 
-        bool   empty() const { return true; }
-        size_t size() const { return 0; }
-        void   clear() {}
+        bool empty() const { return true; }
+        void clear() {}
 
         /*
             Named Singletons
         */
 
         template <typename T>
-        void RegisterNamedSingleton(const std::string& name, T* instance) {}
+        T* Get(std::string_view name) {
+            auto it = namedSingletons.find(name.data());
+            if (it == namedSingletons.end()) return nullptr;
+            return it->second->as<T*>();
+        }
+
+        template <typename T>
+        void RegisterNamedSingleton(const std::string& name, T* singletonRawPointer) {
+            auto [result, success] =
+                namedSingletons.try_emplace(name, make_void_ptr(singletonRawPointer));
+            if (!success) {
+                // TODO: in tests define what this behavior should be :)
+                throw std::runtime_error("Named singleton already exists");
+            }
+            result->second->disable_delete();
+        }
     };
 }
