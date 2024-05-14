@@ -13,6 +13,7 @@ DependencyInjection::Container ioc;
 Setup {
     ioc.clear();
     AssertThat(ioc, IsEmpty());
+    AssertThat(ioc.size(), Equals(0));
 }
 
 Test(R"(DI::RegisterNamedSingleton<IType>("Name", IType*);)") {
@@ -21,6 +22,23 @@ Test(R"(DI::RegisterNamedSingleton<IType>("Name", IType*);)") {
 
     // Register singleton instance
     ioc.RegisterNamedSingleton<IExample>("ExampleSingleton", &example);
+    AssertThat(ioc, Is().Not().Empty());
+    AssertThat(ioc.size(), Equals(1));
+
+    // Get singleton instance
+    auto* exampleSingleton = ioc.Get<IExample>("ExampleSingleton");
+
+    AssertThat(exampleSingleton, Equals(&example));
+}
+
+Test(R"(DI::RegisterNamedSingleton<IType>("Name", IType&);)") {
+    // Create singleton instance
+    Example example;
+
+    // Register singleton instance
+    ioc.RegisterNamedSingleton<IExample>("ExampleSingleton", example);
+    AssertThat(ioc, Is().Not().Empty());
+    AssertThat(ioc.size(), Equals(1));
 
     // Get singleton instance
     auto* exampleSingleton = ioc.Get<IExample>("ExampleSingleton");
