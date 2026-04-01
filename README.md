@@ -3,54 +3,78 @@
 ```cpp
 #include <dependency_injection.h>
 
-void Example() {
-    // Given a type, create a new instance
-    auto dog = DI::Make<Dog>();
+DI::Container services;
 
-    // Provide constructor arguments, if available
-    auto cat = DI::Make<Cat>("Fluffy");
+// Register an interface to an implementation
+services.RegisterInterface<ILogger, FileLogger>();
 
-    // Or get a pointer to a singleton instance
-    auto* instance = DI::Get<MySingleton>();
-}
+// Register a singleton
+services.RegisterSingletonInterface<IDatabase, SqliteDatabase>();
 
-// Elsewhere in the code, setup these types...
-void Setup() {
-    // Register Dog so it created a new DogImplementation
-    DI::RegisterInterface<Dog, DogImplementation>();
+// Create transient instances (caller owns it, new each time)
+auto logger = services.Make<ILogger>();
 
-    // Or it can directly create a concrete type
-    DI::RegisterType<Dog>();
+// Get singletons (container owns it, same instance every time)
+auto* db = services.Get<IDatabase>();
+```
 
-    // You can define arguments for the constructor
-    DI::RegisterInterface<Cat, CatImplementation, std::string>();
-    DI::RegisterType<Cat, std::string>();
+### Global container
 
-    // Singletons can given types or interfaces
-    // and DI will automatically construct the instance
-    DI::RegisterSingletonType<MySingleton>();
-    DI::RegisterSingletonInterface<MySingleton, MySingletonImplementation>();
+A global container is available for convenience:
 
-    // Singletons also support constructor arguments
-    DI::RegisterSingletonInterface<MySingleton, MySingletonImplementation, int, std::string>(42, "The Answer");
-    DI::RegisterSingletonType<MySingleton, int, std::string>(42, "The Answer");
+```cpp
+DI::RegisterSingletonType<AppConfig>();
+auto* config = DI::Get<AppConfig>();
+```
 
-    // You can reset a singleton which will delete the instance and make a new one
-    DI::ResetSingleton<MySingleton>();
-    DI::ResetSingleton<MySingleton>(42, "The Answer"); // if constructor arguments
+### Constructor arguments
 
-    // Finally, if you want to provide your own reference or unique_ptr to a singleton, you can
-    DI::RegisterSingleton<MySingleton>(exampleSingletonInstance);
-    DI::RegisterSingleton<MySingleton>(std::make_unique<MySingleton>());
-    DI::RegisterSingleton<MySingleton>(std::move(existingUniquePtr));
-}
+If the implementation type takes constructor arguments, declare the argument
+types during registration and pass the values when creating instances:
 
-MySingleton exampleSingletonInstance;
+```cpp
+// FileLogger's constructor takes a std::string (the log file path)
+//                                          vvvvvvvvvvvvv
+services.RegisterInterface<ILogger, FileLogger, std::string>();
+
+// Pass the actual value when you Make it
+auto logger = services.Make<ILogger>(std::string("/var/log/app.log"));
+```
+
+For singletons, the values are passed at registration time (since the
+container creates the instance immediately):
+
+```cpp
+// Database's constructor takes a std::string (the connection string)
+//                                       vvvvvvvvvvvvv
+services.RegisterSingletonType<Database, std::string>("connection_string");
+//                                                     ^^^^^^^^^^^^^^^^^^^
+//                                          value passed here, at registration
+```
+
+### Existing instances
+
+```cpp
+// Reference (you own the lifetime)
+MyService myService;
+services.RegisterSingleton<MyService>(myService);
+
+// unique_ptr (container takes ownership)
+services.RegisterSingleton<MyService>(std::make_unique<MyService>());
+```
+
+### Reset singletons
+
+```cpp
+services.ResetSingleton<IDatabase>();
 ```
 
 ## What?
 
-Dependency Injection / Inversion of Control container for C++
+Dependency Injection / Inversion of Control container for C++.
+
+- `Make<T>()` returns a `unique_ptr` — caller owns it, new instance every time
+- `Get<T>()` returns a raw pointer — container owns it, same instance every time
 
 ## Installation
 
