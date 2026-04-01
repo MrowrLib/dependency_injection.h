@@ -22,21 +22,23 @@ namespace DependencyInjection {
         std::unordered_map<std::type_index, std::unique_ptr<void, DeleterFunc>> _singletons;
         std::unordered_map<std::type_index, void*>                              _singletonsRawPtrs;
 
+        // Bug 1 fix: check end() BEFORE dereferencing, then check null
         template <typename Base>
         inline auto GetFactory() {
             auto it = _factories.find(typeid(Base));
+            if (it == _factories.end())
+                throw std::logic_error("Type not registered: " + std::string(typeid(Base).name()));
             if (it->second == nullptr)
                 throw std::logic_error(
                     "Type has no factory function: " + std::string(typeid(Base).name())
                 );
-            if (it != _factories.end()) return it->second;
-            throw std::logic_error("Type not registered: " + std::string(typeid(Base).name()));
+            return it->second;
         }
 
     public:
         template <typename Base>
         bool IsRegistered() {
-            return _factories.find(typeid(Base)) != _factories.end();
+            return _lifetimes.find(typeid(Base)) != _lifetimes.end();
         }
 
         template <typename Base>
@@ -53,17 +55,17 @@ namespace DependencyInjection {
                     "Singleton is not a singleton: " + std::string(typeid(Singleton).name())
                 );
 
-            // Get the factory function
             auto factory = GetFactory<Singleton>();
-
-            // Create a new instance of the singleton using the arguments provided
             auto [raw_ptr, deleter] = factory(std::make_tuple(std::forward<Args>(args)...));
 
-            // Store the new instance of the singleton
+            // Clear any raw pointer entry
+            _singletonsRawPtrs.erase(typeid(Singleton));
+
             std::unique_ptr<void, DeleterFunc> singleton(raw_ptr, deleter);
             _singletons[typeid(Singleton)] = std::move(singleton);
         }
 
+        // Bug 3 fix: erase from _singletons instead of reset()
         template <typename Base>
         void ResetSingletonPointer(Base* singletonPtr) {
             if (GetLifetime<Base>() != Lifetime::Singleton)
@@ -72,29 +74,26 @@ namespace DependencyInjection {
                 );
 
             _singletonsRawPtrs[typeid(Base)] = singletonPtr;
-
-            auto existing_singleton = _singletons.find(typeid(Base));
-            if (existing_singleton != _singletons.end()) existing_singleton->second.reset();
+            _singletons.erase(typeid(Base));
         }
 
+        // Bug 5 fix: factory constructs directly on heap, no temp + move
         template <typename Base, typename Derived, typename... Args>
         void RegisterInterface(Lifetime lifetime = Lifetime::Transient) {
-            // Create factory function
             auto factory = [](std::any args) {
-                auto     argsTuple = std::any_cast<std::tuple<Args...>>(args);
-                Derived* raw_ptr   = new Derived(std::apply(
-                    [](auto&&... args) { return Derived(std::forward<decltype(args)>(args)...); },
+                auto  argsTuple = std::any_cast<std::tuple<Args...>>(args);
+                auto* raw_ptr   = std::apply(
+                    [](auto&&... args) {
+                        return new Derived(std::forward<decltype(args)>(args)...);
+                    },
                     argsTuple
-                ));
-                return std::make_pair(static_cast<void*>(raw_ptr), [](void* ptr) {
+                );
+                return std::make_pair(static_cast<void*>(raw_ptr), DeleterFunc([](void* ptr) {
                     delete static_cast<Derived*>(ptr);
-                });
+                }));
             };
 
-            // Store factory function
             _factories[typeid(Base)] = factory;
-
-            // Store lifetime associated with the type
             _lifetimes[typeid(Base)] = lifetime;
         }
 
@@ -123,29 +122,27 @@ namespace DependencyInjection {
                 std::unique_ptr<Base, DeleterFunc>(&singleton, [](void*) {});
         }
 
+        // Bug 7 fix: register factory as nullptr + lifetime so IsRegistered works
         template <typename Base>
         void RegisterSingleton(Base* singletonPtr) {
+            _factories[typeid(Base)] = nullptr;
             _lifetimes[typeid(Base)] = Lifetime::Singleton;
-            ResetSingletonPointer<Base>(singletonPtr);
+            _singletonsRawPtrs[typeid(Base)] = singletonPtr;
         }
 
+        // Bug 8 fix: simplified deleter, no dead captures
         template <typename Base>
         void RegisterSingleton(std::unique_ptr<Base> singletonPtr) {
             _factories[typeid(Base)] = nullptr;
             _lifetimes[typeid(Base)] = Lifetime::Singleton;
 
-            auto*       raw_ptr = singletonPtr.release();
-            DeleterFunc deleter = [raw_ptr, captured_deleter =
-                                                singletonPtr.get_deleter()](void* ptr) mutable {
-                std::unique_ptr<Base, decltype(captured_deleter)> temp_ptr(
-                    static_cast<Base*>(ptr), std::move(captured_deleter)
-                );
-                temp_ptr.reset();
-            };
-
-            _singletons[typeid(Base)] = std::unique_ptr<void, DeleterFunc>(raw_ptr, deleter);
+            auto* raw_ptr = singletonPtr.release();
+            _singletons[typeid(Base)] = std::unique_ptr<void, DeleterFunc>(
+                raw_ptr, [](void* ptr) { delete static_cast<Base*>(ptr); }
+            );
         }
 
+        // Bug 2 fix: static_cast instead of reinterpret_cast
         template <typename Singleton>
         Singleton* Get() {
             if (GetLifetime<Singleton>() != Lifetime::Singleton)
@@ -154,8 +151,8 @@ namespace DependencyInjection {
                 );
 
             auto it = _singletons.find(typeid(Singleton));
-            if (it != _singletons.end())
-                return reinterpret_cast<std::unique_ptr<Singleton, DeleterFunc>&>(it->second).get();
+            if (it != _singletons.end() && it->second)
+                return static_cast<Singleton*>(it->second.get());
 
             auto it_raw_ptr = _singletonsRawPtrs.find(typeid(Singleton));
             if (it_raw_ptr != _singletonsRawPtrs.end())

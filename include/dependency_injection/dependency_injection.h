@@ -2,16 +2,18 @@
 
 #include "container.h"
 
+// Bug 4 fix: forward the lifetime parameter in RegisterInterface and RegisterType
+
 namespace DependencyInjection {
 
     template <typename Base, typename Derived, typename... Args>
     inline void RegisterInterface(Lifetime lifetime = Lifetime::Transient) {
-        Container::GetGlobalInstance().RegisterInterface<Base, Derived, Args...>();
+        Container::GetGlobalInstance().RegisterInterface<Base, Derived, Args...>(lifetime);
     }
 
     template <typename Impl, typename... Args>
     inline void RegisterType(Lifetime lifetime = Lifetime::Transient) {
-        Container::GetGlobalInstance().RegisterType<Impl, Args...>();
+        Container::GetGlobalInstance().RegisterType<Impl, Args...>(lifetime);
     }
 
     template <typename Base, typename Derived, typename... Args>
@@ -23,8 +25,9 @@ namespace DependencyInjection {
 
     template <typename Impl, typename... Args>
     inline void RegisterSingletonType(Args&&... args) {
-        Container::GetGlobalInstance().RegisterSingletonType<Impl, Args...>(std::forward<Args>(args
-        )...);
+        Container::GetGlobalInstance().RegisterSingletonType<Impl, Args...>(
+            std::forward<Args>(args)...
+        );
     }
 
     template <typename Base>

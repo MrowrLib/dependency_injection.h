@@ -1,0 +1,80 @@
+name: Main Branch
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.json'
+      - 'docs/**'
+      - '.claude/**'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-test:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+          - os: ubuntu-latest
+            toolchain: gcc-14
+          - os: macos-latest
+            toolchain: llvm
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install xmake
+        uses: xmake-io/github-action-setup-xmake@cc0f56c35b75d0975ed5d9e29005fae707721cd5 # v1
+
+      - name: Cache xmake packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.xmake/packages
+            ~/AppData/Local/.xmake/packages
+          key: xmake-${{ runner.os }}-${{ hashFiles('**/xmake.lua') }}
+          restore-keys: |
+            xmake-${{ runner.os }}-
+
+      - name: Install GCC 14 (Linux)
+        if: matrix.toolchain == 'gcc-14'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-14 g++-14
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+
+      - name: Install LLVM/Clang (macOS)
+        if: matrix.toolchain == 'llvm'
+        run: |
+          brew install llvm
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
+
+      - name: Configure (Linux GCC 14)
+        if: matrix.toolchain == 'gcc-14'
+        run: xmake config --toolchain=gcc -y
+
+      - name: Configure (macOS LLVM)
+        if: matrix.toolchain == 'llvm'
+        run: xmake config --toolchain=llvm --sdk="$(brew --prefix llvm)" -y
+
+      - name: Configure (Windows)
+        if: matrix.toolchain == ''
+        run: xmake config -y
+
+      - name: Build
+        run: xmake build tests
+
+      - name: Run tests
+        run: xmake run tests
